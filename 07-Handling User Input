@@ -1,0 +1,377 @@
+# Chapter 7: Forms
+
+## 7.1 Introduction
+
+Until now, our Flask applications could only display information to users. However, real-world applications also need to receive information from users. Whether it's logging in, registering a new account, searching for a product, or submitting feedback, the application must be able to collect user input and process it on the server.
+
+This is achieved using **HTML Forms**.
+
+A form acts as a communication bridge between the **browser (client)** and the **Flask application (server)**. The user enters information, the browser packages that information into an HTTP request, and Flask processes the request.
+
+Common examples of forms include:
+
+- Login Forms
+- Registration Forms
+- Search Bars
+- Contact Forms
+- Feedback Forms
+- Checkout Pages
+
+The focus of this chapter is not HTML itself, but understanding **how Flask works with forms** and how user input reaches the backend.
+
+---
+
+# 7.2 The `<form>` Tag
+
+The `<form>` tag is the container that groups related input fields together. When the user submits the form, the browser collects the values of all the form fields and sends them to the server as a single HTTP request.
+
+```html
+<form>
+    ...
+</form>
+```
+
+Without a `<form>` tag, the browser displays the input fields, but it doesn't know where or how to submit the collected data.
+
+**Interview Point**
+
+> The `<form>` tag groups related input fields and manages their submission to the server.
+
+---
+
+# 7.3 The `action` Attribute
+
+The `action` attribute specifies **where the browser should send the form data** after the user submits the form.
+
+```html
+<form action="/login">
+```
+
+In Flask:
+
+```python
+@app.route("/login")
+def login():
+    ...
+```
+
+When the user submits the form, the browser sends the request to `/login`, where Flask processes it.
+
+Instead of hardcoding URLs, Flask recommends using `url_for()`.
+
+```html
+<form action="{{ url_for('login') }}">
+```
+
+This automatically generates the correct URL based on the route function.
+
+**Key Point**
+
+- `action` specifies the destination URL.
+- `url_for()` generates that URL dynamically.
+
+---
+
+# 7.4 The `method` Attribute
+
+The `method` attribute specifies **how the browser should send the form data**.
+
+```html
+<form action="/login" method="POST">
+```
+
+The two most commonly used methods are:
+
+### GET
+
+- Used for retrieving data.
+- Sends data in the URL.
+- Commonly used for search bars and filters.
+
+Example:
+
+```
+/search?product=Laptop
+```
+
+### POST
+
+- Used for sending data that will be processed or stored.
+- Sends data inside the request body.
+- Commonly used for login, registration, payments, and contact forms.
+
+**Remember**
+
+- `action` → Where to send data.
+- `method` → How to send data.
+
+---
+
+# 7.5 GET vs POST
+
+| GET | POST |
+|------|------|
+| Retrieves data | Sends data for processing |
+| Data is visible in the URL | Data is sent in the request body |
+| Used for searching and filtering | Used for login, registration, and creating data |
+
+Examples:
+
+Search Form
+
+```
+GET /search?product=Laptop
+```
+
+Login Form
+
+```
+POST /login
+```
+
+**Note**
+
+POST does **not** encrypt data. It simply places the data in the request body instead of the URL. Encryption is provided by **HTTPS**.
+
+---
+
+# 7.6 The `name` Attribute
+
+The `name` attribute is one of the most important parts of a form because it allows Flask to identify each input field.
+
+```html
+<input type="text" name="username">
+```
+
+When the user enters:
+
+```
+Namitha
+```
+
+the browser creates a key-value pair:
+
+```
+username = Namitha
+```
+
+Flask uses this key to retrieve the value.
+
+Without the `name` attribute, the browser does not send that field's value.
+
+**Remember**
+
+The `name` attribute acts as the **key**, and the user's input becomes the **value**.
+
+---
+
+# 7.7 How Form Data Reaches Flask
+
+When the user clicks the **Submit** button, the browser performs the following steps:
+
+1. Collects all form fields that have a `name` attribute.
+2. Creates key-value pairs.
+3. Creates an HTTP request using the form's `action` and `method`.
+4. Sends the request to the Flask server.
+5. Flask receives the request and stores the submitted data inside the `request` object.
+
+Flow:
+
+```
+User fills the form
+        ↓
+Browser collects form values
+        ↓
+Creates an HTTP request
+        ↓
+Sends request to Flask
+        ↓
+Flask processes the submitted data
+```
+
+---
+
+# 7.8 Reading Form Data (`request.form`)
+
+When a form is submitted using the **POST** method, Flask stores the submitted data in `request.form`.
+
+Example:
+
+```python
+from flask import request
+
+@app.route("/login", methods=["POST"])
+def login():
+
+    username = request.form.get("username")
+    password = request.form.get("password")
+
+    return f"Welcome {username}"
+```
+
+Here:
+
+```python
+request.form.get("username")
+```
+
+retrieves the value entered in:
+
+```html
+<input name="username">
+```
+
+**Best Practice**
+
+Prefer:
+
+```python
+request.form.get("username")
+```
+
+instead of:
+
+```python
+request.form["username"]
+```
+
+because `.get()` safely returns `None` if the key doesn't exist.
+
+---
+
+# 7.9 Reading Query Parameters (`request.args`)
+
+When a form uses the **GET** method, the browser appends the form data to the URL as query parameters.
+
+Example:
+
+```
+/search?product=Laptop
+```
+
+Flask reads these values using:
+
+```python
+from flask import request
+
+@app.route("/search")
+def search():
+
+    product = request.args.get("product")
+
+    return f"You searched for {product}"
+```
+
+**Difference**
+
+- `request.form` → Reads POST data.
+- `request.args` → Reads GET query parameters.
+
+---
+
+# 7.10 Input Validation
+
+Input validation ensures that user-provided data is correct before processing or storing it.
+
+Examples include checking:
+
+- Required fields
+- Password length
+- Email format
+- Age range
+
+Example:
+
+```python
+if not username:
+    return "Username is required"
+
+if len(password) < 8:
+    return "Password must contain at least 8 characters."
+```
+
+Validation can happen in two places.
+
+### Client-side Validation
+
+Performed by the browser using HTML attributes such as:
+
+```html
+<input type="email" required>
+
+<input minlength="8">
+```
+
+Provides immediate feedback to users.
+
+### Server-side Validation
+
+Performed inside Flask after the request reaches the server.
+
+```python
+if not username:
+    return "Username is required"
+```
+
+Server-side validation is mandatory because browser validation can be bypassed.
+
+**Interview Point**
+
+Never trust client-side validation alone. Always validate user input again on the server.
+
+---
+
+# 7.11 Flash Messages
+
+Flash messages are temporary messages used to provide feedback to users after an action.
+
+Examples:
+
+- Login Successful
+- Invalid Username or Password
+- Registration Successful
+- Record Deleted Successfully
+
+Example:
+
+```python
+from flask import flash
+
+flash("Login Successful!")
+```
+
+Flash messages are displayed once and automatically removed after being shown.
+
+They are commonly used together with redirects.
+
+---
+
+# 7.12 Best Practices
+
+- Use meaningful `name` attributes.
+- Use `POST` for sensitive information such as passwords.
+- Use `GET` for searching and filtering.
+- Prefer `request.form.get()` over dictionary indexing when appropriate.
+- Always perform server-side validation.
+- Use `url_for()` instead of hardcoding URLs.
+- Display meaningful feedback using Flash Messages.
+
+---
+
+# Chapter Summary
+
+In this chapter, you learned how Flask receives and processes user input through HTML forms.
+
+You learned:
+
+- The purpose of HTML forms.
+- The role of the `<form>` tag.
+- How `action` and `method` work.
+- The difference between GET and POST.
+- Why the `name` attribute is essential.
+- How browsers submit form data.
+- How Flask reads submitted data using `request.form` and `request.args`.
+- The importance of input validation.
+- How Flash Messages provide temporary feedback to users.
+
+With forms completed, your Flask applications can now accept user input. In the next chapter, you'll learn how to **store and retrieve this data using databases**, enabling you to build fully functional, data-driven web applications.
